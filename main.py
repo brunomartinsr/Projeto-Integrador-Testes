@@ -7,7 +7,7 @@ try:
     conexao_bd = mysql.connector.connect(
         host="172.16.12.14", #IP servidor da PUC
         user="BD080324137",
-        password="Orinf7",
+        password="",
         database="BD080324137",
         auth_plugin='mysql_native_password'
     )
