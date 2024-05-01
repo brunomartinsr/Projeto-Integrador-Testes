@@ -16,10 +16,11 @@ try:
 except Exception:
     print(Exception)
 
-def executar(query):
-    cursor = conexao_bd.cursor()
-    cursor.execute(query)
-    conexao_bd.commit()
+cursor = conexao_bd.cursor()
+cursor.execute("create table produto")
+conexao_bd.commit()
+print("execução commitada!")
+
 
 def obter_input(mensagem):
     valor = input(mensagem)
