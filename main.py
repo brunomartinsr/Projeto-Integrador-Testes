@@ -16,6 +16,15 @@ try:
 except Exception:
     print(Exception)
 
+def inserir_dados(produtos_insert, dados):
+    cursor = conexao_bd.cursor()
+    try:
+        cursor.execute(produtos_insert,dados)
+        conexao_bd.commit()
+        print("DADOS DO PRODUTO INSERIDOS COM SUCESSO!")
+    except Exception:
+        print(Exception)
+
 def obter_input(mensagem):
     valor = input(mensagem)
     while not valor.strip():
@@ -92,13 +101,12 @@ while True:
             else:
                 rentabilidade < 0 * 100
                 print('\nSua classificação de rentabilidade é de prejuizo')
-                  
-            cursor = conexao_bd.cursor()
+            
+            #Inserindo os dados dos produtos da tabela
             produtos_insert = "insert into PRODUTOS (Cod_produto, Nome_produto, Descricao_produto, CP, CF, CV, IV , ML) values (%s, %s, %s, %s, %s, %s, %s, %s)"
             dados = (cod_produto, nome_produto, descricao_produto, CP, CF, CV, IV, ML)
-            cursor.execute(produtos_insert,dados)
-            conexao_bd.commit()
-            print("execução commitada!")
+            inserir = inserir_dados(produtos_insert, dados)
+            
                   
             #Opção de continuar
             continuar = input('\nDESEJA CONTINUAR UTILIZANDO O PROGRAMA? [S/N]: ').upper()
