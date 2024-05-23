@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 from mysql.connector import ProgrammingError
 from tabulate import tabulate
+from tkinter import *
 
 #Configuração do banco de dados
 try:
@@ -313,49 +314,100 @@ def excluir():
     except Error as e:
         print(f'\nERRO AO EXCLUIR PRODUTO: {e}\n')
 
-def acessar():
-    acesso_liberado = False
-    while not acesso_liberado:
-        try:
-            nome_digitado = obter_input('Nome de usuário: ').lower()
-            senha_digitada = obter_input('Senha: ').lower()
-
-            executor_sql.execute(f'SELECT * FROM USUARIOS WHERE nome_usuario = "{nome_digitado}"')
-            usuario = executor_sql.fetchone()
-
-            if usuario:
-                nome_usuario = usuario[0]
-                senha_usuario = usuario[1]
-
-                while senha_usuario != senha_digitada:
-                    print('\nSENHA INCORRETADA\n')
-                    senha_digitada = obter_input('Senha: ').lower()
-
-                print(f'\nSEJA BEM-VINDO AO INSTOCK {nome_usuario}')
-                acesso_liberado = True
-            else: 
-                print('\nUSUÁRIO NÃO CADASTRADO!\n')
-
-                resposta = obter_input('GOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
-                while resposta not in ['S', 'N']:
-                    print('\nDIGITE SOMENTE OPÇÕES ENTRE "S" e "N"!')
-                    resposta = obter_input('\nGOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
-
-                if resposta == 'S':
-                    executor_sql.execute(f'insert into USUARIOS (nome_usuario, senha_usuario) values ("{nome_digitado}", "{senha_digitada}")')
-                    conexao_bd.commit()
-                    print('\nUSUÁRIO CADASTRADO!\n')
-                    print(f'SEJA BEM-VINDO AO INSTOCK {nome_digitado}')
-                    acesso_liberado = True
-        except Error as e:
-            print(f'\nERRO AO REALIZAR LOGIN: {e}\n') 
-        except KeyboardInterrupt:
-            print("\nPROGRAMA INTERROMPIDO!\n")
-
-
 
 #Inicio do programa
-acessar()
+class Application:
+    def __init__(self, master=None):
+        self.fontePadrao = ("Arial", "10")
+        self.primeiroContainer = Frame(master)
+        self.primeiroContainer["pady"] = 10
+        self.primeiroContainer.pack()
+
+        self.segundoContainer = Frame(master)
+        self.segundoContainer["padx"] = 20
+        self.segundoContainer.pack()
+
+        self.terceiroContainer = Frame(master)
+        self.terceiroContainer["padx"] = 20
+        self.terceiroContainer.pack()
+
+        self.quartoContainer = Frame(master)
+        self.quartoContainer["pady"] = 20
+        self.quartoContainer.pack()
+
+        self.titulo = Label(self.primeiroContainer, text="Dados do usuário")
+        self.titulo["font"] = ("Arial", "10", "bold")
+        self.titulo.pack()
+
+        self.nomeLabel = Label(self.segundoContainer,text="Nome", font=self.fontePadrao)
+        self.nomeLabel.pack(side=LEFT)
+
+        self.nome = Entry(self.segundoContainer)
+        self.nome["width"] = 30
+        self.nome["font"] = self.fontePadrao
+        self.nome.pack(side=LEFT)
+
+        self.senhaLabel = Label(self.terceiroContainer, text="Senha", font=self.fontePadrao)
+        self.senhaLabel.pack(side=LEFT)
+
+        self.senha = Entry(self.terceiroContainer)
+        self.senha["width"] = 30
+        self.senha["font"] = self.fontePadrao
+        self.senha["show"] = "*"
+        self.senha.pack(side=LEFT)
+
+        self.autenticar = Button(self.quartoContainer)
+        self.autenticar["text"] = "Autenticar"
+        self.autenticar["font"] = ("Calibri", "8")
+        self.autenticar["width"] = 12
+        self.autenticar["command"] = self.acessar
+        self.autenticar.pack()
+
+    #Método verificar senha
+    def acessar(self):
+        acesso_liberado = False
+        while not acesso_liberado:
+            try:
+                nome_digitado = self.nome.get()
+                senha_digitada = self.senha.get()
+                nome_digitado = obter_input('Nome de usuário: ').lower()
+                senha_digitada = obter_input('Senha: ').lower()
+
+                executor_sql.execute(f'SELECT * FROM USUARIOS WHERE nome_usuario = "{nome_digitado}"')
+                usuario = executor_sql.fetchone()
+
+                if usuario:
+                    nome_usuario = usuario[0]
+                    senha_usuario = usuario[1]
+
+                    while senha_usuario != senha_digitada:
+                        print('\nSENHA INCORRETADA\n')
+                        senha_digitada = obter_input('Senha: ').lower()
+
+                    print(f'\nSEJA BEM-VINDO AO INSTOCK {nome_usuario}')
+                    acesso_liberado = True
+                else: 
+                    print('\nUSUÁRIO NÃO CADASTRADO!\n')
+
+                    resposta = obter_input('GOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
+                    while resposta not in ['S', 'N']:
+                        print('\nDIGITE SOMENTE OPÇÕES ENTRE "S" e "N"!')
+                        resposta = obter_input('\nGOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
+
+                    if resposta == 'S':
+                        executor_sql.execute(f'insert into USUARIOS (nome_usuario, senha_usuario) values ("{nome_digitado}", "{senha_digitada}")')
+                        conexao_bd.commit()
+                        print('\nUSUÁRIO CADASTRADO!\n')
+                        print(f'SEJA BEM-VINDO AO INSTOCK {nome_digitado}')
+                        acesso_liberado = True
+            except Error as e:
+                print(f'\nERRO AO REALIZAR LOGIN: {e}\n')
+
+root = Tk()
+root.geometry("300x300")
+Application(root)
+root.mainloop()
+
 print('PARA INICIARMOS ESCOLHA UMA DAS OPÇÕES ABAIXO:')
 
 menu=['CADASTRAR PRODUTO',\
