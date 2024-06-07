@@ -1,8 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
-from mysql.connector import ProgrammingError
 from tabulate import tabulate
-from tkinter import *
 
 #Configuração do banco de dados
 try:
@@ -56,12 +54,25 @@ def opcaoEscolhida(mnu):
         opcao = obter_input('Qual é a sua opção? ')
     return opcao
 
-#Função decorativa que exibe a quantidade de '-' (traços) igual o tamanho do texto recebido
-def fazer_linhas(string):
-    linhas = ''
-    for caracter in string:
-        linhas += '-'
-    print(linhas)
+#Função para verificar se o produto existe no banco de dados
+def retorna_produto(cod_produto):
+    try:
+        executor_sql.execute(f'SELECT * FROM PRODUTOS WHERE Cod_produto = {cod_produto}')
+        resultado = executor_sql.fetchone()
+        if resultado: return resultado
+        else: return False
+    except Error as e:
+        print(f'\nERRO AO VERIFICAR PRODUTO: {e}\n')
+
+#Função que retorna os cálculos de um certo produto
+def retorna_calculos(cod_produto):
+    try:
+        executor_sql.execute(f'SELECT * FROM CALCULOS JOIN PRODUTOS ON CALCULOS.cod = PRODUTOS.Cod_produto WHERE PRODUTOS.Cod_produto = {cod_produto}')
+        resultado = executor_sql.fetchone()
+        if resultado: return resultado
+        else: return False
+    except Error as e:
+        print(f'\nERRO AO CONSULTAR CÁLCULOS: {e}\n')
 
 #Função para inserir um produto
 def inserir_produto(produto):
@@ -73,6 +84,22 @@ def inserir_produto(produto):
     except Error as e:
         print(f'\nERRO AO INSERIR PRODUTO: {e}\n')
         
+#Função para inserir os cálculos de um produto     
+def inserir_calculos(calculos):
+    try:
+        executor_sql.execute(f'insert into CALCULOS (cod, PV, RB, OC, calculo_custo_aquisicao, calculo_receita_bruta, calculo_custo_fixo, calculo_comissao_vendas, calculo_impostos, calculo_outros_custos, calculo_rentabilidade) values ({calculos[0]}, {calculos[1]}, {calculos[2]}, {calculos[3]}, {calculos[4]}, {calculos[5]}, {calculos[6]}, {calculos[7]}, {calculos[8]}, {calculos[9]}, {calculos[10]})')
+        conexao_bd.commit()
+    except Error as e:
+        print(f'\nERRO AO INSERIR CÁLCULOS: {e}\n')
+        
+#Função para atualizar os cálculos de um produto
+def atualizar_calculo(cod_calculo, calculo, novo_valor):
+    try:
+        executor_sql.execute(f'UPDATE CALCULOS SET {calculo} = {novo_valor} WHERE cod = {cod_calculo}')
+        conexao_bd.commit()
+    except Error as e:
+        print(f'\nERRO AO ATUALIZAR CÁLCULO {calculo}: {e}\n')
+
 #Função para consultar um dado especifico de um certo produto
 def consultar_dado(dado, cod_produto):
     try:
@@ -142,45 +169,40 @@ def calcular(cod_produto):
 def cadastrar():
     dados_inseridos = False
     while not dados_inseridos:
-        try:
-            cod_produto = obter_input("\nDigite o código do produto: ") #chave primária
+        cod_produto = obter_input("\nDigite o código do produto: ") #chave primária
                 
-            #Verificando se o produto já existe logo no input do código
-            executor_sql.execute(f'SELECT * FROM PRODUTOS WHERE Cod_produto = {cod_produto}')
-            resultado = executor_sql.fetchone()
-            if resultado:
-                print("ESSE CÓDIGO JÁ FOI REGISTRADO!")
-                continue
-
-            nome_produto = obter_input("Digite o nome do produto: ")
-            descricao_produto = obter_input("Digite a descrição do produto: ")
-
-            #custo do produto
-            CP = obter_num_float("Digite o custo do produto (R$): ")
-                    
-            #custo fixo/administrativo
-            CF = obter_num_float("Digite o custo do fixo (%): ")
-                        
-            #comissão de vendas
-            CV = obter_num_float("Digite a comissão sobre a venda (%): ")
-                        
-            #impostos 
-            IV = obter_num_float("Digite o valor dos impostos (%): ")
-                        
-            #rentabilidade
-            ML = obter_num_float("Digite a rentabilidade desejada (%): ")
-
-            #Pegando dados para inserir na tabela PRODUTOS
-            produto = [cod_produto, nome_produto, descricao_produto, CP, CF, CV, IV, ML]
-            inserir_produto(produto)
-
-            calcular(cod_produto)
-
-            dados_inseridos = True
-
-        except ProgrammingError:
-            print("DIGITE UM CÓDIGO VÁLIDO!")
+        #Verificando se o produto já existe logo no input do código
+        executor_sql.execute(f'SELECT * FROM PRODUTOS WHERE Cod_produto = "{cod_produto}"')
+        resultado = executor_sql.fetchone()
+        if resultado:
+            print("ESSE CÓDIGO JÁ FOI REGISTRADO!")
             continue
+
+        nome_produto = obter_input("Digite o nome do produto: ")
+        descricao_produto = obter_input("Digite a descrição do produto: ")
+
+        #custo do produto
+        CP = obter_num_float("Digite o custo do produto (R$): ")
+                
+        #custo fixo/administrativo
+        CF = obter_num_float("Digite o custo do fixo (%): ")
+                    
+        #comissão de vendas
+        CV = obter_num_float("Digite a comissão sobre a venda (%): ")
+                    
+        #impostos 
+        IV = obter_num_float("Digite o valor dos impostos (%): ")
+                    
+        #rentabilidade
+        ML = obter_num_float("Digite a rentabilidade desejada (%): ")
+
+        #Pegando dados para inserir na tabela PRODUTOS
+        produto = [cod_produto, nome_produto, descricao_produto, CP, CF, CV, IV, ML]
+        inserir_produto(produto)
+
+        calcular(cod_produto)
+
+        dados_inseridos = True
 
 #Função para consultar todas as informações de um certo produto
 def consultar():
@@ -314,105 +336,54 @@ def excluir():
     except Error as e:
         print(f'\nERRO AO EXCLUIR PRODUTO: {e}\n')
 
+def acessar():
+    acesso_liberado = False
+    while not acesso_liberado:
+        try:
+            nome_digitado = obter_input('Nome de usuário: ').lower()
+            senha_digitada = obter_input('Senha: ').lower()
+
+            executor_sql.execute(f'SELECT * FROM USUARIOS WHERE nome_usuario = "{nome_digitado}"')
+            usuario = executor_sql.fetchone()
+
+            if usuario:
+                nome_usuario = usuario[0]
+                senha_usuario = usuario[1]
+
+                while senha_usuario != senha_digitada:
+                    print('\nSENHA INCORRETADA\n')
+                    senha_digitada = obter_input('Senha: ').lower()
+
+                print(f'\nSEJA BEM-VINDO AO INSTOCK {nome_usuario}')
+                acesso_liberado = True
+            else: 
+                print('\nUSUÁRIO NÃO CADASTRADO!\n')
+
+                resposta = obter_input('GOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
+                while resposta not in ['S', 'N']:
+                    print('\nDIGITE SOMENTE OPÇÕES ENTRE "S" e "N"!')
+                    resposta = obter_input('\nGOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
+
+                if resposta == 'S':
+                    executor_sql.execute(f'insert into USUARIOS (nome_usuario, senha_usuario) values ("{nome_digitado}", "{senha_digitada}")')
+                    conexao_bd.commit()
+                    print('\nUSUÁRIO CADASTRADO!\n')
+                    print(f'SEJA BEM-VINDO AO INSTOCK {nome_digitado}')
+                    acesso_liberado = True
+        except Error as e:
+            print(f'\nERRO AO REALIZAR LOGIN: {e}\n') 
+        except KeyboardInterrupt:
+            print("\nPROGRAMA INTERROMPIDO!\n")
+
+
 
 #Inicio do programa
-class Application:
-    def __init__(self, master=None):
-        self.fontePadrao = ("Arial", "10")
-        self.primeiroContainer = Frame(master)
-        self.primeiroContainer["pady"] = 10
-        self.primeiroContainer.pack()
-
-        self.segundoContainer = Frame(master)
-        self.segundoContainer["padx"] = 20
-        self.segundoContainer.pack()
-
-        self.terceiroContainer = Frame(master)
-        self.terceiroContainer["padx"] = 20
-        self.terceiroContainer.pack()
-
-        self.quartoContainer = Frame(master)
-        self.quartoContainer["pady"] = 20
-        self.quartoContainer.pack()
-
-        self.titulo = Label(self.primeiroContainer, text="Dados do usuário")
-        self.titulo["font"] = ("Arial", "10", "bold")
-        self.titulo.pack()
-
-        self.nomeLabel = Label(self.segundoContainer,text="Nome", font=self.fontePadrao)
-        self.nomeLabel.pack(side=LEFT)
-
-        self.nome = Entry(self.segundoContainer)
-        self.nome["width"] = 30
-        self.nome["font"] = self.fontePadrao
-        self.nome.pack(side=LEFT)
-
-        self.senhaLabel = Label(self.terceiroContainer, text="Senha", font=self.fontePadrao)
-        self.senhaLabel.pack(side=LEFT)
-
-        self.senha = Entry(self.terceiroContainer)
-        self.senha["width"] = 30
-        self.senha["font"] = self.fontePadrao
-        self.senha["show"] = "*"
-        self.senha.pack(side=LEFT)
-
-        self.autenticar = Button(self.quartoContainer)
-        self.autenticar["text"] = "Autenticar"
-        self.autenticar["font"] = ("Calibri", "8")
-        self.autenticar["width"] = 12
-        self.autenticar["command"] = self.acessar
-        self.autenticar.pack()
-
-    #Método verificar senha
-    def acessar(self):
-        acesso_liberado = False
-        while not acesso_liberado:
-            try:
-                nome_digitado = self.nome.get()
-                senha_digitada = self.senha.get()
-                nome_digitado = obter_input('Nome de usuário: ').lower()
-                senha_digitada = obter_input('Senha: ').lower()
-
-                executor_sql.execute(f'SELECT * FROM USUARIOS WHERE nome_usuario = "{nome_digitado}"')
-                usuario = executor_sql.fetchone()
-
-                if usuario:
-                    nome_usuario = usuario[0]
-                    senha_usuario = usuario[1]
-
-                    while senha_usuario != senha_digitada:
-                        print('\nSENHA INCORRETADA\n')
-                        senha_digitada = obter_input('Senha: ').lower()
-
-                    print(f'\nSEJA BEM-VINDO AO INSTOCK {nome_usuario}')
-                    acesso_liberado = True
-                else: 
-                    print('\nUSUÁRIO NÃO CADASTRADO!\n')
-
-                    resposta = obter_input('GOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
-                    while resposta not in ['S', 'N']:
-                        print('\nDIGITE SOMENTE OPÇÕES ENTRE "S" e "N"!')
-                        resposta = obter_input('\nGOSTARIA DE REALIZAR O CADASTRO? [S/N]: ').upper()
-
-                    if resposta == 'S':
-                        executor_sql.execute(f'insert into USUARIOS (nome_usuario, senha_usuario) values ("{nome_digitado}", "{senha_digitada}")')
-                        conexao_bd.commit()
-                        print('\nUSUÁRIO CADASTRADO!\n')
-                        print(f'SEJA BEM-VINDO AO INSTOCK {nome_digitado}')
-                        acesso_liberado = True
-            except Error as e:
-                print(f'\nERRO AO REALIZAR LOGIN: {e}\n')
-
-root = Tk()
-root.geometry("300x300")
-Application(root)
-root.mainloop()
-
+acessar()
 print('PARA INICIARMOS ESCOLHA UMA DAS OPÇÕES ABAIXO:')
 
 menu=['CADASTRAR PRODUTO',\
-      'CONSULTAR PRODUTO',\
-      'ATUALIZAR PRODUTO',\
+      'CONSULTAR DADO',\
+      'ATUALIZAR INFORMAÇÃO',\
       'LISTAR PRODUTOS',\
       'EXCLUIR PRODUTO',\
       'SAIR']
